@@ -1,5 +1,6 @@
 from rs3helper.plugins.plugin import Plugin
-from threading import Timer
+from threading import Timer, Event, Thread
+import time
 
 
 class CroesusHelper(Plugin):
@@ -22,6 +23,8 @@ class CroesusHelper(Plugin):
         self.ability_timers = {ability: None for ability in self.abilities}
         self.offset = offset
         self.next_ability_index = 0
+        self.countdown_stop_event = Event()
+        self.countdown_thread = None
 
     def update(self):
         """Starts tracking the boss encounter if it's detected and not already being tracked."""
@@ -37,16 +40,17 @@ class CroesusHelper(Plugin):
         return True
 
     def start_timers(self):
-        """Starts a timer for the next ability in the sequence."""
+        """
+        Starts the timer for the next ability in the rotation.
+        """
+        if self.countdown_thread is not None and self.countdown_thread.is_alive():
+            self.countdown_stop_event.set()  # stop the countdown
+        self.countdown_thread = None  # reset the thread
+        self.countdown_stop_event.clear()  # reset the stop event
+        self.print_next_ability()  # print the next ability
+        self.start_incoming_attack_timer()  # start the countdown to the next attack
         self.set_ability_timer(self.next_ability_index)
         self.next_ability_index = (self.next_ability_index + 1) % len(self.abilities)
-
-    def stop(self):
-        """Stops tracking the boss encounter and cancels all timers."""
-        self.is_boss_encounter_tracking = False
-        for timer in self.ability_timers.values():
-            if timer is not None:
-                timer.cancel()
 
     def set_ability_timer(self, index):
         """Sets a timer for a specific ability.
@@ -59,10 +63,43 @@ class CroesusHelper(Plugin):
         ability = self.abilities[index]
         method_name = ability.lower().replace(' ', '_').replace('(', '').replace(')', '').replace('&', 'and')
         interval = self.intervals[index] - self.offset
-        self.ability_timers[ability] = Timer(max(0, interval), getattr(self, method_name))
-        self.ability_timers[ability].start()
+        try:
+            self.ability_timers[ability] = Timer(max(0, interval), getattr(self, method_name))
+            self.ability_timers[ability].start()
+        except AttributeError:
+            print(f"Method {method_name} does not exist")
 
-    # define methods for each ability
+    def print_next_ability(self):
+        """Prints the name of the next ability that will be triggered."""
+        next_ability = self.abilities[self.next_ability_index]
+        print(f"Next ability: {next_ability}")
+
+    def start_incoming_attack_timer(self):
+        """Starts a timer that counts down to the next attack and prints a warning message when the attack is about to happen."""
+        interval = self.intervals[self.next_ability_index] - self.offset
+        self.countdown_stop_event.set()  # Stop any existing countdown
+        self.countdown_stop_event.clear()  # Prepare for a new countdown
+        self.countdown_thread = Thread(target=self.countdown, args=(interval,))
+        self.countdown_thread.start()
+
+    def countdown(self, seconds_remaining):
+        """Counts down from the given number of seconds, printing a message each second."""
+        for i in range(seconds_remaining, 0, -1):
+            if self.countdown_stop_event.is_set():
+                return  # stop the countdown
+            print(f"Incoming attack in {i}")
+            time.sleep(1)
+
+    def stop(self):
+        """Stops tracking the boss encounter and cancels all timers."""
+        self.is_boss_encounter_tracking = False
+        for timer in self.ability_timers.values():
+            if timer is not None:
+                timer.cancel()
+        if self.countdown_thread is not None and self.countdown_thread.is_alive():
+            self.countdown_stop_event.set()
+
+            # define methods for each ability
     # each method prints a warning for the ability and starts a timer for the next ability
     def red_spore_bomb(self):
         print("Boss used Red Spore Bomb!")
@@ -104,7 +141,5 @@ class CroesusHelper(Plugin):
 if __name__ == "__main__":
     croesus_helper = CroesusHelper()
     croesus_helper.update()
-
-    import time
 
     time.sleep(120)
