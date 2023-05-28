@@ -7,6 +7,16 @@ This application provides various plugins to assist with gameplay, such as timer
 ## Installation
 
 ```bash
+brew install tesseract
+```
+
+Add tesseract variable path
+
+```bash
+export PATH=$PATH:$HOME/opt/tesseract/bin
+```
+
+```bash
 pip install runescape_helper
 ```
 
