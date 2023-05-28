@@ -11,3 +11,6 @@ class Plugin:
 
     def update(self):
         pass  # This method should be overridden by subclasses
+
+    def stop(self):
+        pass  # This method should be overridden by subclasses

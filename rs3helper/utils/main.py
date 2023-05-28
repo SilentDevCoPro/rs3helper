@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 clicks = []
 
 
-def on_click(x, y, button, pressed):
+def on_click(x, y, _, pressed):
     if pressed:
         clicks.append((x, y))
         print('Mouse clicked at ({0}, {1})'.format(x, y))
