@@ -26,4 +26,4 @@ This project is in early development, we welcome contributions. Please see the o
 features (and known issues).
 
 ## Copyright
-Copyright (c) 2023 SilentDevCoPro. See LICENSE for details.
+Copyright (c) 2023 Max. See LICENSE for details.
