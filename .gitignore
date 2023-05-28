@@ -1,0 +1,20 @@
+# .gitignore
+
+# Ignore Python build artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Ignore Python distribution artifacts
+dist/
+build/
+*.egg-info/
+
+# Ignore PyCharm specific files
+.idea/
+*.iml
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
