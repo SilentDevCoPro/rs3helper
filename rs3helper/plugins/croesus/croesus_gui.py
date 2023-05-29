@@ -1,7 +1,6 @@
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QVBoxLayout, QWidget, QFrame
+from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QFrame
 from PyQt6.QtCore import QTimer, Qt, QSettings, QByteArray
 from PyQt6.QtGui import QFont
-import sys
 
 
 class CroesusGUI(QMainWindow):
