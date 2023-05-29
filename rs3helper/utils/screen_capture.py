@@ -33,6 +33,7 @@ class ScreenCapture:
         """
         self.sct = mss()
         self.monitor = self.sct.monitors[2]
+        self.clicks = []
 
     def _capture(self) -> np.ndarray:
         """

@@ -1,6 +1,9 @@
 import time
 from typing import List
-from rs3helper.plugins.plugin import Plugin
+
+from plugins.croesus.croesus_helper import CroesusHelper
+from plugins.plugin import Plugin
+
 
 
 class Application:
@@ -16,8 +19,16 @@ class Application:
         while self.running:
             for plugin in self.plugins:
                 if plugin.enabled:
+                    print('Updating')
                     plugin.update()
             time.sleep(0.1)
 
     def stop(self):
         self.running = False
+
+
+if __name__ == '__main__':
+    app = Application()
+    croesus_helper = CroesusHelper()
+    app.load_plugin(croesus_helper)
+    app.start()

@@ -1,10 +1,14 @@
 from rs3helper.plugins.plugin import Plugin
+from rs3helper.plugins.croesus.croesus_gui import CroesusGUI
+from rs3helper.utils.screen_capture import ScreenCapture
+from rs3helper.utils.mouse import Mouse
+from rs3helper.utils.ocr import OCR
 from threading import Timer, Event, Thread
-import time
-from croesus_gui import CroesusGUI
 from queue import Queue
 from PyQt6.QtWidgets import QApplication
 import sys
+import time
+import re
 
 
 class CroesusHelper(Plugin):
@@ -33,19 +37,32 @@ class CroesusHelper(Plugin):
         self.next_ability_index = 0
         self.countdown_stop_event = Event()
         self.countdown_thread = None
+        self.screen_capture = ScreenCapture()
+        self.mouse = Mouse()
 
     def update(self):
         """Starts tracking the boss encounter if it's detected and not already being tracked."""
-        if self.detect_boss_encounter() and not self.is_boss_encounter_tracking:
+        print("Update function running...")
+        is_boss_encounter_running = self.detect_boss_encounter()
+        print("STATE: " + str(is_boss_encounter_running) + str(self.is_boss_encounter_tracking))
+        if is_boss_encounter_running and not self.is_boss_encounter_tracking:
+            print("STARTING TIMERS")
             self.start_timers()
             self.is_boss_encounter_tracking = True
+            self.start()
 
     def detect_boss_encounter(self):
-        """Detects the boss encounter.
-
-        Currently returns True by default. This should be replaced with actual detection logic.
-        """
-        return True
+        """Detects the boss encounter."""
+        self.mouse.start_listener()
+        screen_capture = ScreenCapture()
+        cropped_screenshot = screen_capture.get_cropped_screenshot(self.mouse.clicks)
+        text = OCR.extract_text(cropped_screenshot)
+        match = re.search(r"\b\d{2}:\d{2}\b", text)
+        if match:
+            print("Boss timer found")
+            return True
+        print("Boss timer not found.")
+        return False
 
     def start_timers(self):
         """
@@ -155,9 +172,3 @@ class CroesusHelper(Plugin):
         print("Boss used Sticky Fungus & Energy Fungus!")
         self.start_timers()
         self.queue.put(("flash", None))
-
-
-if __name__ == "__main__":
-    croesus_helper = CroesusHelper()
-    croesus_helper.update()
-    croesus_helper.start()
