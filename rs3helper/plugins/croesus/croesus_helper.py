@@ -45,12 +45,19 @@ class CroesusHelper(Plugin):
         """Starts tracking the boss encounter if it's detected and not already being tracked."""
         print("Update function running...")
         self.is_boss_encounter_running = self.detect_boss_encounter()
-        print("STATE: " + str(self.is_boss_encounter_running) + str(self.is_boss_encounter_tracking))
-        if self.is_boss_encounter_running and not self.is_boss_encounter_tracking:
+        print("STATE: " + str(self.is_boss_encounter_running) + str(self.is_boss_encounter_tracking) + str(self.enabled))
+        if self.is_boss_encounter_running and not self.is_boss_encounter_tracking and self.enabled:
             print("STARTING TIMERS")
             self.start_timers()
             self.is_boss_encounter_tracking = True
-            self.start()
+
+    def enable(self):
+        super().enable()
+        self.gui.show()
+
+    def disable(self):
+        super().disable()
+        self.gui.hide()
 
     def detect_boss_encounter(self):
         """Detects the boss encounter."""
