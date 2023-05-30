@@ -21,15 +21,16 @@ class CroesusHelper(Plugin):
                    earlier, negative values make them later. Default is 0, which means no offset.
     """
     abilities = ["Red Spore Bomb", "Fairy Ring", "Slime Mould", "Yellow Spore Bomb",
-                 "Hard Fungus Fall (Stun)", "Sticky Fungus", "Green Spore Bomb", "Blue Spore Bomb",
-                 "Sticky Fungus & Energy Fungus"]
+                 "Hard Fungus Fall (Stun)", "Sticky Fungus", "Green Spore Bomb",
+                 "Fairy Ring", "Slime Mould", "Blue Spore Bomb",
+                 "Hard Fungus Fall (Stun)", "Energy Fungus"]
     intervals = [14, 9, 15, 13, 12, 9, 14, 11, 14, 12, 11, 9]  # time intervals in seconds
 
     def __init__(self, offset=0):
         super().__init__("Croesus Helper")
         self.queue = Queue()
         self.app = QApplication([])
-        self.gui = CroesusGUI(self.queue)
+        self.gui = CroesusGUI(self.queue, self)
         self.gui.show()
         self.is_boss_encounter_tracking = False
         self.ability_timers = {ability: None for ability in self.abilities}
@@ -39,13 +40,15 @@ class CroesusHelper(Plugin):
         self.countdown_thread = None
         self.screen_capture = ScreenCapture()
         self.mouse = Mouse()
+        self.is_boss_encounter_running = False
+        self.paused = False
 
     def update(self):
         """Starts tracking the boss encounter if it's detected and not already being tracked."""
         print("Update function running...")
-        is_boss_encounter_running = self.detect_boss_encounter()
-        print("STATE: " + str(is_boss_encounter_running) + str(self.is_boss_encounter_tracking))
-        if is_boss_encounter_running and not self.is_boss_encounter_tracking:
+        self.is_boss_encounter_running = self.detect_boss_encounter()
+        print("STATE: " + str(self.is_boss_encounter_running) + str(self.is_boss_encounter_tracking))
+        if self.is_boss_encounter_running and not self.is_boss_encounter_tracking:
             print("STARTING TIMERS")
             self.start_timers()
             self.is_boss_encounter_tracking = True
@@ -53,29 +56,64 @@ class CroesusHelper(Plugin):
 
     def detect_boss_encounter(self):
         """Detects the boss encounter."""
-        self.mouse.start_listener()
-        screen_capture = ScreenCapture()
-        cropped_screenshot = screen_capture.get_cropped_screenshot(self.mouse.clicks)
-        text = OCR.extract_text(cropped_screenshot)
-        match = re.search(r"\b\d{2}:\d{2}\b", text)
-        if match:
-            print("Boss timer found")
-            return True
-        print("Boss timer not found.")
-        return False
+        # self.mouse.start_listener()
+        # screen_capture = ScreenCapture()
+        # cropped_screenshot = screen_capture.get_cropped_screenshot(self.mouse.clicks)
+        # text = OCR.extract_text(cropped_screenshot)
+        # match = re.search(r"\b\d{2}:\d{2}\b", text)
+        # if match:
+        #     print("Boss timer found")
+        return True
+        # print("Boss timer not found.")
+        # return False
 
     def start_timers(self):
         """
         Starts the timer for the next ability in the rotation.
         """
+        # Ensure any running countdown thread is terminated before starting a new one
         if self.countdown_thread is not None and self.countdown_thread.is_alive():
             self.countdown_stop_event.set()
+            self.countdown_thread.join()
+
         self.countdown_thread = None
         self.countdown_stop_event.clear()
         self.print_next_ability()
         self.start_incoming_attack_timer()
         self.set_ability_timer(self.next_ability_index)
         self.next_ability_index = (self.next_ability_index + 1) % len(self.abilities)
+
+    def pause(self):
+        """Pauses tracking the boss encounter and pauses all timers."""
+        self.paused = True
+        for timer in self.ability_timers.values():
+            if timer is not None:
+                timer.cancel()
+        if self.countdown_thread is not None and self.countdown_thread.is_alive():
+            self.countdown_stop_event.set()
+
+    def resume(self):
+        """Resumes tracking the boss encounter and resumes all timers."""
+        self.paused = False
+        self.start_timers()
+
+    def reset(self):
+        """Resets the boss encounter back to the start."""
+        self.next_ability_index = 0
+
+        if self.countdown_thread is not None and self.countdown_thread.is_alive():
+            self.countdown_stop_event.set()
+            # Give time for the thread to properly terminate
+            self.countdown_thread.join()
+
+        # Cancel all ability timers
+        for timer in self.ability_timers.values():
+            if timer is not None:
+                timer.cancel()
+
+        # Ensure the stop event is cleared before starting timers again
+        self.countdown_stop_event.clear()
+        self.start_timers()
 
     def set_ability_timer(self, index):
         """Sets a timer for a specific ability.

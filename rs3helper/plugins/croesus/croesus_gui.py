@@ -1,10 +1,10 @@
-from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QFrame
+from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QFrame, QPushButton, QSizePolicy, QHBoxLayout
 from PyQt6.QtCore import QTimer, Qt, QSettings, QByteArray
 from PyQt6.QtGui import QFont
 
 
 class CroesusGUI(QMainWindow):
-    def __init__(self, queue, *args, **kwargs):
+    def __init__(self, queue, croesus_helper, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.setWindowTitle("Croesus Helper")
@@ -31,16 +31,50 @@ class CroesusGUI(QMainWindow):
         self.ability_label = QLabel("Next ability: ", self)
         self.ability_label.setFont(QFont('Arial', 16))
         self.countdown_label = QLabel("Incoming attack in: ", self)
-        self.countdown_label.setFont(QFont('Arial', 16))
+        self.countdown_label.setFont(QFont('Arial', 24))
         self.layout.addWidget(self.ability_label)
         self.layout.addWidget(self.countdown_label)
 
         # Flash Indicator
         self.color_box = QLabel(self)
-        self.color_box.setFixedSize(100, 100)
+        self.color_box.setFixedHeight(100)
         self.color_box.setStyleSheet("background-color: green;")
         self.color_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.layout.addWidget(self.color_box)
+        self.color_box.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed))
+
+        # Pause/resume button
+        self.croesus_helper = croesus_helper
+
+        self.pause_button = QPushButton("Pause", self)
+        self.pause_button.setFont(QFont('Arial', 16))
+        self.pause_button.clicked.connect(self.toggle_pause)
+        self.layout.addWidget(self.pause_button)
+        self.is_paused = False
+
+        # Reset Button
+        self.reset_button = QPushButton("Reset", self)
+        self.reset_button.setFont(QFont('Arial', 16))
+        self.reset_button.setStyleSheet("""
+            QPushButton {
+                background-color: red;
+                color: white;
+                border: none;
+                padding: 5px;
+                min-width: 100px;
+            }
+            QPushButton:hover {
+                background-color: #ff3333;
+            }
+            QPushButton:pressed {
+                background-color: #b30000;
+            }
+        """)
+        self.reset_button.clicked.connect(self.croesus_helper.reset)
+        self.button_layout = QHBoxLayout()
+        self.button_layout.addWidget(self.pause_button)
+        self.button_layout.addWidget(self.reset_button)
+        self.layout.addLayout(self.button_layout)
 
         self.queue = queue
         self.timer = QTimer()
@@ -65,6 +99,14 @@ class CroesusGUI(QMainWindow):
                 self.update_countdown(message[1])
             elif message[0] == "flash":
                 self.flash_color_box()
+
+    def toggle_pause(self):
+        if self.croesus_helper.paused:
+            self.croesus_helper.resume()
+            self.pause_button.setText("Pause")
+        else:
+            self.croesus_helper.pause()
+            self.pause_button.setText("Resume")
 
     def update_ability(self, ability):
         self.ability_label.setText(f"Next ability: {ability}")
