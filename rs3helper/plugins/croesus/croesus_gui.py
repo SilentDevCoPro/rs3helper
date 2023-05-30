@@ -1,9 +1,11 @@
 from PyQt6.QtWidgets import QMainWindow, QLabel, QVBoxLayout, QWidget, QFrame, QPushButton, QSizePolicy, QHBoxLayout
-from PyQt6.QtCore import QTimer, Qt, QSettings, QByteArray
+from PyQt6.QtCore import QTimer, Qt, QSettings, QByteArray, pyqtSlot, pyqtSignal
 from PyQt6.QtGui import QFont
 
 
 class CroesusGUI(QMainWindow):
+    update_pause_button_text = pyqtSignal(str)
+
     def __init__(self, queue, croesus_helper, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -51,6 +53,7 @@ class CroesusGUI(QMainWindow):
         self.pause_button.clicked.connect(self.toggle_pause)
         self.layout.addWidget(self.pause_button)
         self.is_paused = False
+        self.update_pause_button_text.connect(self.set_pause_button_text)
 
         # Reset Button
         self.reset_button = QPushButton("Reset", self)
@@ -89,6 +92,10 @@ class CroesusGUI(QMainWindow):
 
         self.restoreGeometry(QByteArray.fromHex(self.settings.value("windowGeometry", "", type=QByteArray)))
         self.restoreState(QByteArray.fromHex(self.settings.value("windowState", "", type=QByteArray)))
+
+    @pyqtSlot(str)
+    def set_pause_button_text(self, text):
+        self.pause_button.setText(text)
 
     def check_queue(self):
         while not self.queue.empty():

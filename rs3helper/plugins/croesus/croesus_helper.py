@@ -2,13 +2,11 @@ from rs3helper.plugins.plugin import Plugin
 from rs3helper.plugins.croesus.croesus_gui import CroesusGUI
 from rs3helper.utils.screen_capture import ScreenCapture
 from rs3helper.utils.mouse import Mouse
-from rs3helper.utils.ocr import OCR
 from threading import Timer, Event, Thread
 from queue import Queue
 from PyQt6.QtWidgets import QApplication
 import sys
 import time
-import re
 
 
 class CroesusHelper(Plugin):
@@ -23,7 +21,7 @@ class CroesusHelper(Plugin):
     abilities = ["Red Spore Bomb", "Fairy Ring", "Slime Mould", "Yellow Spore Bomb",
                  "Hard Fungus Fall (Stun)", "Sticky Fungus", "Green Spore Bomb",
                  "Fairy Ring", "Slime Mould", "Blue Spore Bomb",
-                 "Hard Fungus Fall (Stun)", "Energy Fungus"]
+                 "Hard Fungus Fall (Stun)", "Go to Energy Fungus"]
     intervals = [14, 9, 15, 13, 12, 9, 14, 11, 14, 12, 11, 9]  # time intervals in seconds
 
     def __init__(self, offset=0):
@@ -206,7 +204,8 @@ class CroesusHelper(Plugin):
         self.start_timers()
         self.queue.put(("flash", None))
 
-    def sticky_fungus_and_energy_fungus(self):
+    def go_to_energy_fungus(self):
         print("Boss used Sticky Fungus & Energy Fungus!")
-        self.start_timers()
+        self.gui.update_pause_button_text.emit("CLICK WHEN FUNGUS DIES")
+        self.pause()
         self.queue.put(("flash", None))
